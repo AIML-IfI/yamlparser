@@ -1,0 +1,15 @@
+name: test
+
+int_value: 42
+
+list_value:
+    - 10
+    - 42
+    - 101
+
+nested:
+    name: nested_test
+    pi: 3.14159265
+
+    nested:
+        name: subnested
