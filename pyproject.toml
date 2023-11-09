@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "yamlparser"
-version = "0.0.1"
+version = "0.0.12"
 authors = [
   { name="Manuel Guenther", email="siebenkopf@googlemail.com" },
 ]
@@ -20,3 +20,9 @@ classifiers = [
 [project.urls]
 "Homepage" = "https://github.com/pypa/sampleproject"
 "Bug Tracker" = "https://github.com/pypa/sampleproject/issues"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["yamlparser"]
+exclude = ["test"]
+namespaces = false
