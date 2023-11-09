@@ -55,7 +55,7 @@ class NameSpace:
         """Sets a value for a given key. This key can contain periods, which are parsed to index sub-namespaces"""
         keys = key.split(".")
         if len(keys) > 1:
-            self[keys[0]].set(".".join(keys[1:]), value)
+            getattr(self,keys[0]).set(".".join(keys[1:]), value)
         else:
             self[key] = value
 
