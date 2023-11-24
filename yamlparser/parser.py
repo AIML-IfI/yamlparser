@@ -55,7 +55,7 @@ def config_parser(parser=None, default_config_files=None, infer_types=True, add_
     # create a parser entry for these types
     if parser is None:
         parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-    parser.add_argument("configuration_files", nargs="+", default=[default_config_file], help="The configuration files to parse. From the second config onward, it be key=value pairs to create sub-configurations")
+    parser.add_argument("configuration_files", nargs="+", default=[default_config_files], help="The configuration files to parse. From the second config onward, it be key=value pairs to create sub-configurations")
 
     for k,v in attributes.items():
         metavar = k.split(".")[-1].upper()
