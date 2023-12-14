@@ -85,6 +85,18 @@ class NameSpace:
         with open(yaml_file, "w") as f:
             f.write(self.dump(indent))
 
+    def format(self, string):
+        """Formats the given string and replaces keys with contents
+
+        This function replaces all occurrences of `{KEY}` values in the given string with the value stored in this `NameSpace` instance.
+        Here, `KEY` can be any fully-quoted string as returned by the :func:`attributes` function.
+
+        Returns:
+          the formatted string
+        """
+        for k,v in self.attributes().items():
+            string = string.replace(f"{{{k}}}", str(v))
+        return string
 
     def dump(self, indent=4):
         """Pretty-prints the config to a string"""

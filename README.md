@@ -70,9 +70,42 @@ It is even possible to create new sub-namespaces on the fly:
     namespace.children.daughter = "Jane Doe"
     namespace["children"].son = "Jake Doe"
 
-Finally, `NameSpace` objects can be written to YAML files:
+`NameSpace` objects can be written to YAML files:
 
     namespace.save("path/to/my/file.yaml")
+
+You can also turn this `NameSpace` into a fully-quoted dictionary, where sub-namespaces are separated using a period `.` to avoid name clashes:
+
+    namespace.attributes()
+
+will return:
+
+    {
+        'name': 'Jon Doe',
+        'age': 42,
+        'address.street': 'Main Street',
+        'address.number': 10,
+        'address.city': 'Zurich',
+        'address.zip': 8050,
+        'children.daughter': 'Jane Doe',
+        'children.son': 'Jake Doe'
+    }
+
+Finally, you can format a given string with the contents of a `NameSpace`.
+Simply use fully-quoted embraced keys, and you will get the according values.
+This feature is particularly useful when you want to build file names according to configurations.
+Given the `namespace` object from above, you can query:
+
+    namespace.format("Name={name}, Address={address.street} {address.number}")
+
+to obtain the result `"Name=Jon Doe, Address=Main Street 10"`.
+Please note that format options (such as used in f-strings) are not (yet) supported.
+Also, if the key is not part of the `namespace.attributes()`, the entry will not be replaced:
+
+    namespace.format("Name={name}, Unknown={unknown}")
+
+will result in `"Name=Jon Doe, Unknown={unknown}"`.
+
 
 ### Parser
 
@@ -114,7 +147,6 @@ When presenting a configuration file, it is automatically parser and all its con
       --address.number ADDRESS.NUMBER
                             Overwrite value for address.number, default=10
 
-As you can see, sub-namespaces are separated using a period `.` to avoid name clashes.
 When removing the `--help` option, you can see the parser configurations (the default behavior of `script.py`):
 
     $ python script.py config.yaml
@@ -160,7 +192,7 @@ It is also possible to add configuration files into sub-namespaces by defining a
     name: Jon Doe
 
 Additionally, we wish to be able to add command line options to our configurations that do not appear in any configuration file.
-This can be done programatically by providing a parser with specific options, and example is provided in `extend.py`:
+This can be done programmatically by providing a parser with specific options, and example is provided in `extend.py`:
 
     [content of extended.py]
     import yamlparser, argparse

@@ -72,8 +72,16 @@ def test_io():
     assert namespace.nested.email == "name@host.domain"
 
 
+def test_format():
+    namespace = yamlparser.NameSpace(dict(name="Name", nested=dict(email="name@host.domain"), value=1.))
+
+    formatted = namespace.format("{name}, {nested.email}, {value}")
+    assert formatted == "Name, name@host.domain, 1.0", formatted
+
+
 if __name__ == "__main__":
     test_yaml_file()
     test_yaml_dict()
     test_extend()
     test_io()
+    test_format()
