@@ -1,11 +1,16 @@
 import argparse
 import sys
+import warnings
 
 from .namespace import NameSpace
 
-def config_parser(parser=None, default_config_files=None, infer_types=True, add_config_files=False,  command_line_options=None):
+global _config
+_config = None
+
+def config_parser(parser=None, default_config_files=None, infer_types=True, add_config_files=False,  command_line_options=None, store_config=True):
     """Creates or updates an `argparse.ArgumentParser` with the option to load configuration files (YAML).
     These files will be automatically parsed and each configuration will be added as a separate option to the command line.
+    After calling this function, the global :py:func:`get_config` will return the loaded configuration.
 
     Arguments:
 
@@ -27,6 +32,9 @@ def config_parser(parser=None, default_config_files=None, infer_types=True, add_
     For debugging purposes, a list of command line options is accepted. This is mainly a debug and test feature.
     If not present, `sys.agrv[1:]` is selected, as usual.
 
+    store_config: bool
+    If selected (the default), the configuration will be stored in a global object that can be accessed via py:func:`get_config()`.
+
     Returns:
     namespace: NameSpace
     A namespace object containing all options taken from configuration file and command line.
@@ -39,18 +47,18 @@ def config_parser(parser=None, default_config_files=None, infer_types=True, add_
     _config_parser.add_argument("configuration_files", nargs="+", default=default_config_files, help="The configuration files to parse. From the second config onward, it be key=value pairs to create sub-configurations")
 
     args,_ = _config_parser.parse_known_args(command_line_options)
-    namepsace = NameSpace(args.configuration_files[0])
+    namespace = NameSpace(args.configuration_files[0])
     for cfg in args.configuration_files[1:]:
         splits = cfg.split("=")
         if len(splits)>1:
-            namepsace.add(splits[0], splits[1])
+            namespace.add(splits[0], splits[1])
             for s in splits[2:]:
-                namepsace.update(splits[0], s)
+                namespace.update(splits[0], s)
         else:
-            namepsace.update(splits[0])
+            namespace.update(splits[0])
 
     # compute the types of the nested configurations
-    attributes = namepsace.attributes()
+    attributes = namespace.attributes()
 
     # create a parser entry for these types
     if parser is None:
@@ -72,6 +80,28 @@ def config_parser(parser=None, default_config_files=None, infer_types=True, add_
     for k,v in vars(args).items():
         if add_config_files or k != "configuration_files":
             if v is not None:
-                namepsace.set(k,v)
+                namespace.set(k,v)
 
-    return namepsace
+    if store_config:
+        global _config
+        if _config is not None:
+            warnings.warn("The configuration has already been set, overwriting it.")
+        _config = namespace
+
+    return namespace
+
+
+def get_config():
+    """Returns the global configuration object, which is the result of (the latest call to) py:func:`config_parser`.
+
+    Returns:
+    config: NameSpace
+    The namespace object containing all options taken from configuration file and command line.
+
+    Raises: RuntimeError
+    If the configuration has not been loaded yet.
+    """
+    global _config
+    if _config is None:
+        raise RuntimeError("Please call 'config_parser(..., store_config=True)' before trying to access the configuration")
+    return _config
