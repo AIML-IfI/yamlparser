@@ -78,6 +78,9 @@ def test_format():
     formatted = namespace.format("{name}, {nested.email}, {value}")
     assert formatted == "Name, name@host.domain, 1.0", formatted
 
+    formatted = namespace.format(["{name}", "{nested.email}", "{value}"])
+    assert formatted == ["Name", "name@host.domain", "1.0"], formatted
+
 
 if __name__ == "__main__":
     test_yaml_file()

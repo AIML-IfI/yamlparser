@@ -91,9 +91,14 @@ class NameSpace:
         This function replaces all occurrences of `{KEY}` values in the given string with the value stored in this `NameSpace` instance.
         Here, `KEY` can be any fully-quoted string as returned by the :func:`attributes` function.
 
+        If the given string is a list, formatting is applied to all elements of that list (recursively).
+
         Returns:
           the formatted string
         """
+        if isinstance(string, list):
+            return [self.format(s) for s in string]
+
         for k,v in self.attributes().items():
             string = string.replace(f"{{{k}}}", str(v))
         return string
