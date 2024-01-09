@@ -120,7 +120,7 @@ class NameSpace:
           the formatted string
         """
         if isinstance(string, list):
-            return [self.format(s) for s in string]
+            return [self.format(s) for s in string if isinstance(s, str)]
 
         for k,v in self.attributes().items():
             string = string.replace(f"{{{k}}}", str(v))
