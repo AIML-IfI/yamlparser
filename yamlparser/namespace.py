@@ -2,6 +2,8 @@ import yaml
 import os
 import pathlib
 
+_modifiable = "_modifiable"
+
 class NameSpace:
     """This is the main class representing our configuration.
     This configuration can be loaded from a configuration file
@@ -166,13 +168,13 @@ class NameSpace:
                 attributes.update({
                     key+"."+k:v for k,v in (self[key].attributes()).items()
                 })
-            else:
+            elif key != _modifiable:
                 attributes[key] = self[key]
         return attributes
 
     def dict(self):
         """Returns the entire configuration as a nested dictionary, by converting sub-namespaces"""
-        return {k: v.dict() if isinstance(v, NameSpace) else v for k,v in vars(self).items() if k != "_modifiable"}
+        return {k: v.dict() if isinstance(v, NameSpace) else v for k,v in vars(self).items() if k != _modifiable}
 
     def __repr__(self):
         """Prints the contents of this namespace"""
@@ -195,7 +197,7 @@ class NameSpace:
 
     def __getattr__(self, key):
         """Allows adding new sub-namespaces inline"""
-        if key == "_modifiable":
+        if key == _modifiable:
             return self.__getattribute__(key)
         if not self._modifiable:
             raise AttributeError(f"You are trying to add new key {key} to a frozen namespace")
@@ -206,7 +208,7 @@ class NameSpace:
 
     def __setattr__(self, key, value):
         """Allows adding new sub-namespaces inline"""
-        if key != "_modifiable" and hasattr(self, "_modifiable") and not self._modifiable:
+        if key != _modifiable and hasattr(self, _modifiable) and not self._modifiable:
             raise AttributeError(f"You are trying to add new key {key} to a frozen namespace")
         # call  the original setattr function
         super(NameSpace, self).__setattr__(key,value)
