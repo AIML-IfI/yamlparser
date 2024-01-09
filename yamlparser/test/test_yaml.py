@@ -81,6 +81,70 @@ def test_format():
     formatted = namespace.format(["{name}", "{nested.email}", "{value}"])
     assert formatted == ["Name", "name@host.domain", "1.0"], formatted
 
+    # add some internal names that shall be formatted
+    namespace["my_name"] = "{name}"
+    namespace.nested.my_email = "{nested.email}"
+    namespace.nested["new_email"] = ["{email}"]
+
+    # assert that these elements do not get formatted automatically
+    assert namespace["my_name"] == "{name}"
+    assert namespace.nested.my_email == "{nested.email}"
+    assert namespace.nested["new_email"] == ["{email}"]
+
+    # now, format all samples
+    namespace.format_self()
+
+    # make sure that all elements are formatted correctly
+    assert namespace["my_name"] == "Name"
+    assert namespace.nested.my_email == "name@host.domain"
+    assert namespace.nested["new_email"] == ["name@host.domain"]
+
+
+def test_freeze():
+    namespace = yamlparser.NameSpace(dict(name="Name", nested=dict(email="name@host.domain"), value=1.))
+    # freeze the namespace
+    namespace.freeze()
+
+    # make sure that you can still access the existing attributes
+    _ = namespace.name
+    _ = namespace["nested"]["email"]
+
+
+    # assure that modifying or adding features raises an ValueError exceptions
+    try:
+        namespace["new_name"] = "New Name"
+        raise Exception("This should not happen")
+    except AttributeError:
+        pass
+
+    try:
+        namespace.set("new_name", "New Name")
+        raise Exception("This should not happen")
+    except AttributeError:
+        pass
+
+    try:
+        namespace.new_name = "New Name"
+        raise Exception("This should not happen")
+    except AttributeError:
+        pass
+
+    try:
+        namespace.name = "New Name"
+        raise Exception("This should not happen")
+    except AttributeError:
+        pass
+
+    try:
+        namespace["name"] = "New Name"
+        raise Exception("This should not happen")
+    except AttributeError:
+        pass
+
+    # try to unfreeze
+    namespace.unfreeze()
+    namespace.new_name = "New Name"
+
 
 if __name__ == "__main__":
     test_yaml_file()
@@ -88,3 +152,4 @@ if __name__ == "__main__":
     test_extend()
     test_io()
     test_format()
+    test_freeze()

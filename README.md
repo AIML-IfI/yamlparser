@@ -91,6 +91,9 @@ will return:
         'children.son': 'Jake Doe'
     }
 
+You can `freeze` and `unfreeze` a `NameSpace` object.
+Frozen objects cannot be modified or extended in any way.
+
 Finally, you can format a given string with the contents of a `NameSpace`.
 Simply use fully-quoted embraced keys, and you will get the according values.
 This feature is particularly useful when you want to build file names according to configurations.
@@ -105,6 +108,29 @@ Also, if the key is not part of the `namespace.attributes()`, the entry will not
     namespace.format("Name={name}, Unknown={unknown}")
 
 will result in `"Name=Jon Doe, Unknown={unknown}"`.
+Most importantly, the `NameSpace` class has a `format_all` function, which formats all internal variables.
+This also works recursively (see the "{extension}" and "{module.extension}" example below:
+
+    namespace = yamlparser.NameSpace({
+        "path" : "/path/to/this",
+        "file" : "{path}/file{module.extension}",
+        "module" : {
+            "extension" : ".txt",
+            "file1" : "{path}/file1{module.extension}",
+            "file2" : "{path}/file2{extension}",
+        }
+    })
+
+    namespace.format_self()
+    print(namespace.dump())
+
+    file: /path/to/this/file.txt
+    module:
+        extension: .txt
+        file1: /path/to/this/file1.txt
+        file2: /path/to/this/file2.txt
+    path: /path/to/this
+
 
 
 ### Parser
@@ -118,7 +144,7 @@ For this purpose, we provide a simple function `config_parser`, which is called 
     namespace = yamlparser.config_parser()
     print(namespace.dump())
 
-The `config_parser` function internally creates and `argparse` parser that requests for a (list of) configuration files.
+The `config_parser` function internally creates an `argparse` parser that requests for a (list of) configuration files.
     $ python script.py --help
 
     usage: [-h] configuration_files [configuration_files ...]
@@ -129,7 +155,7 @@ The `config_parser` function internally creates and `argparse` parser that reque
     optional arguments:
       -h, --help           show this help message and exit
 
-When presenting a configuration file, it is automatically parser and all its contents are added to the parser:
+When presenting a configuration file, it is automatically parsed and all its contents are added to the parser:
 
     $ python script.py config.yaml --help
 
@@ -242,3 +268,7 @@ Any selected option will be reflected in the returned namespace:
 
 Please note that options without default values that are not provided on the command line are not represented in the configuration.
 We propose to provide default values for all options (which cannot be `None`) to avoid surprises.
+
+Finally, by default, the `config_parser` function stores the generated `NameSpace` object internally, calls its `format_self` function and freezes it.
+This configuration can be obtained via the `yamlparser.get_config()` function from anywhere in your source code.
+Please note that the `config_parser` function should be called only once.

@@ -34,6 +34,8 @@ def config_parser(parser=None, default_config_files=None, infer_types=True, add_
 
     store_config: bool
     If selected (the default), the configuration will be stored in a global object that can be accessed via py:func:`get_config()`.
+    Note that, in this case, the configuration is frozen and can no longer be updated (unless unfreeze is called).
+    Note further that all string variables are automatically evaluated.
 
     Returns:
     namespace: NameSpace
@@ -87,6 +89,8 @@ def config_parser(parser=None, default_config_files=None, infer_types=True, add_
         if _config is not None:
             warnings.warn("The configuration has already been set, overwriting it.")
         _config = namespace
+        _config.format_self()
+        _config.freeze()
 
     return namespace
 
