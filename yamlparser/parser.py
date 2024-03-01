@@ -19,7 +19,6 @@ def config_parser(parser=None, default_config_files=None, infer_types=True, add_
 
     default_config_files: list or None
     If given, a list of default configuration files is provided.
-    This feature is untested.
 
     infer_types: bool
     If selected (the default), types are inferred from the data types of the configuration file.
@@ -45,10 +44,16 @@ def config_parser(parser=None, default_config_files=None, infer_types=True, add_
     command_line_options = command_line_options or sys.argv[1:]
     # check if the help on the default parser is requested
     requests_help = len(command_line_options) == 0 or len(command_line_options) == 1 and command_line_options[0] in ("-h", "--help")
-    _config_parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter, add_help=requests_help)
-    _config_parser.add_argument("configuration_files", nargs="*", default=default_config_files, help="The configuration files to parse. From the second config onward, it be key=value pairs to create sub-configurations")
+    _config_parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter, add_help=requests_help and not default_config_files, usage='%(prog)s [arguments] [options]')
+    _config_parser.add_argument("configuration_files", nargs="*", default=default_config_files, help="The configuration files to parse. From the second config onward, it can be key=value pairs to create sub-configurations")
 
-    args,_ = _config_parser.parse_known_args(command_line_options)
+    # parse the known args, which should only be config files in our case
+    config_file_options = []
+    for option in command_line_options:
+        if option[0] == "-": break
+        config_file_options.append(option)
+    args = _config_parser.parse_args(config_file_options)
+
     namespace = NameSpace(args.configuration_files[0])
     for cfg in args.configuration_files[1:]:
         splits = cfg.split("=")
@@ -64,7 +69,7 @@ def config_parser(parser=None, default_config_files=None, infer_types=True, add_
 
     # create a parser entry for these types
     if parser is None:
-        parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+        parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter, usage='%(prog)s configuration_files [options]')
     parser.add_argument("configuration_files", nargs="*", default=default_config_files, help="The configuration files to parse. From the second config onward, it be key=value pairs to create sub-configurations")
 
     for k,v in attributes.items():
@@ -73,7 +78,7 @@ def config_parser(parser=None, default_config_files=None, infer_types=True, add_
         if isinstance(v, list):
             parser.add_argument(option, metavar=metavar, nargs="+", type=type(v[0]) if infer_types else None, help=f"Overwrite list of values for {k}, default={v}")
         else:
-            parser.add_argument(option, metavar=metavar, type=type(v) if infer_types else None, help=f"Overwrite value for {k}, default={v}")
+            parser.add_argument(option, metavar=metavar, type=type(v) if infer_types else None, help=f"Overwrite value for {k}, content of configuration file `{v}`")
 
     # parse arguments again
     args = parser.parse_args(command_line_options)
