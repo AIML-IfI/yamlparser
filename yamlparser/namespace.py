@@ -97,7 +97,8 @@ class NameSpace:
         """Loads the configuration from the given YAML filename"""
         if isinstance(config, (str, pathlib.Path)):
             if os.path.isfile(config):
-                config = yaml.safe_load(open(config, 'r'))
+                with open(config, 'r') as f:
+                    config = yaml.safe_load(f)
             else:
                 raise IOError(f"Could not find configuration file {config}")
 
