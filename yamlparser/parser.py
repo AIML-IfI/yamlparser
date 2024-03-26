@@ -11,6 +11,7 @@ def config_parser(
         parser=None,
         default_config_files=None,
         infer_types=True,
+        ingnore_keys=[],
         add_config_files=False,
         command_line_options=None,
         store_config=True,
@@ -31,6 +32,9 @@ def config_parser(
     infer_types: bool
     If selected (the default), types are inferred from the data types of the configuration file.
     If disabled, all options will be provided as `str`.
+
+    ignore_keys: [str]
+    These keys will not be put on the command line as options.
 
     add_config_files: bool
     If selected, the list of configuration files is added to the final configuration under the `configuration_files` list.
@@ -61,7 +65,7 @@ def config_parser(
     # parse the known args, which should only be config files in our case
     config_file_options = []
     for option in command_line_options:
-        if option[0] == "-" and option not in ("-h", "--help"): break
+        if option[0] == "-" and (not requests_help or option not in ("-h", "--help")): break
         config_file_options.append(option)
     args = _config_parser.parse_args(config_file_options)
 
@@ -84,12 +88,13 @@ def config_parser(
     parser.add_argument("configuration_files", nargs="*", default=default_config_files, help="The configuration files to parse. From the second config onward, it be key=value pairs to create sub-configurations")
 
     for k,v in attributes.items():
+        if k in ingnore_keys: continue
         metavar = k.split(".")[-1].upper()
         option = "--"+k
         if isinstance(v, list):
             parser.add_argument(option, metavar=metavar, nargs="+", type=type(v[0]) if infer_types else None, help=f"Overwrite list of values for {k}, default={v}")
         else:
-            parser.add_argument(option, metavar=metavar, type=type(v) if infer_types else None, help=f"Overwrite value for {k}, content of configuration file `{v}`")
+            parser.add_argument(option, metavar=metavar, type=type(v) if infer_types else None, help=f"Overwrite value for {k}, content of configuration file: `{v}`")
 
     # parse arguments again
     args = parser.parse_args(command_line_options)
