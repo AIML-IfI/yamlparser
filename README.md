@@ -32,6 +32,9 @@ Please contact siebenkopf@googlemail.com in all other cases of issues.
 ### NameSpace
 
 The `NameSpace` class is designed to hold configuration options.
+
+#### Creating NameSpace objects
+
 `NameSpace`'s can be constructed from any type of nested dictionary:
 
     namespace = yamlparser.NameSpace({
@@ -49,6 +52,16 @@ Please note that keys in the dictionary are restricted to valid python variable 
 Similarly, `NameSpace`'s can load these dictionaries directly from a YAML file:
 
     namespace = yamlparser.NameSpace("config.yaml")
+
+This YAML file can also be loaded from within a package by providing the package name and a relative path:
+
+    namespace = yamlparser.NameSpace("package | relative/path/to/config.yaml")
+
+A list of such configuration files inside any package can be obtained via:
+
+    package_config_files = yamlparser.list_config_files("package")
+
+#### Accessing NameSpace contents
 
 The options contained in a `NameSpace` can be accessed either as attributes, or via indexing:
 
@@ -94,6 +107,45 @@ will return:
 You can `freeze` and `unfreeze` a `NameSpace` object.
 Frozen objects cannot be modified or extended in any way.
 
+#### Combining NameSpaces
+
+When loading a configuration from a configuration file, it is also possible to load part of this configuration from another file.
+This is particularly useful when combining contents of different configuration files, which might be pre-defined in code packages.
+To load a specific configuration from a different configuration file, you can simply use a special keyword, `yaml` by default.
+Note that you can also overwrite or extend options loaded from the referenced configuration file:
+
+    # contents of path/to/address/file.yaml
+    address:
+        street: "Main Street"
+        number: 10
+        city: "Zurich"
+
+    # contents of jondoe.yaml
+    name: "Jon Doe"
+    age: 42
+    address:
+        yaml: path/to/address/file.yaml
+        number: 14
+
+When creating a `NameSpace` object from file `jondoe.yaml`, it will automatically load the address from the address file, and overwrite the settings `number` from the referenced config file:
+
+    namespace = NameSpace("jondoe.yaml")
+    print(namespace)
+
+will result in:
+
+    name: Jon Doe
+    age: 42
+    address:
+        street: Main Street
+        number: 14
+        city: Zurich
+
+Please note that the `yaml` file parameter can also include package information, see construction of `NameSpace` above.
+
+
+#### Formatting NameSpace contents
+
 Finally, you can format a given string with the contents of a `NameSpace`.
 Simply use fully-quoted embraced keys, and you will get the according values.
 This feature is particularly useful when you want to build file names according to configurations.
@@ -109,7 +161,7 @@ Also, if the key is not part of the `namespace.attributes()`, the entry will not
 
 will result in `"Name=Jon Doe, Unknown={unknown}"`.
 Most importantly, the `NameSpace` class has a `format_all` function, which formats all internal variables.
-This also works recursively (see the "{extension}" and "{module.extension}" example below:
+This also works recursively (see the "{extension}" and "{module.extension}" example below):
 
     namespace = yamlparser.NameSpace({
         "path" : "/path/to/this",
@@ -130,6 +182,7 @@ This also works recursively (see the "{extension}" and "{module.extension}" exam
         file1: /path/to/this/file1.txt
         file2: /path/to/this/file2.txt
     path: /path/to/this
+
 
 
 

@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "yamlparser"
-version = "0.0.20"
+version = "0.1.1"
 authors = [
   { name="Manuel Guenther", email="siebenkopf@googlemail.com" },
 ]
