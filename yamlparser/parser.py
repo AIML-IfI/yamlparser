@@ -7,7 +7,15 @@ from .namespace import NameSpace
 global _config
 _config = None
 
-def config_parser(parser=None, default_config_files=None, infer_types=True, add_config_files=False,  command_line_options=None, store_config=True):
+def config_parser(
+        parser=None,
+        default_config_files=None,
+        infer_types=True,
+        add_config_files=False,
+        command_line_options=None,
+        store_config=True,
+        sub_config_key="yaml"
+    ):
     """Creates or updates an `argparse.ArgumentParser` with the option to load configuration files (YAML).
     These files will be automatically parsed and each configuration will be added as a separate option to the command line.
     After calling this function, the global :py:func:`get_config` will return the loaded configuration.
@@ -36,6 +44,9 @@ def config_parser(parser=None, default_config_files=None, infer_types=True, add_
     Note that, in this case, the configuration is frozen and can no longer be updated (unless unfreeze is called).
     Note further that all string variables are automatically evaluated.
 
+    sub_config_key: str
+    When the configuration files contain this key, this is interpreted as an additional linked config file.
+
     Returns:
     namespace: NameSpace
     A namespace object containing all options taken from configuration file and command line.
@@ -45,22 +56,22 @@ def config_parser(parser=None, default_config_files=None, infer_types=True, add_
     # check if the help on the default parser is requested
     requests_help = len(command_line_options) == 0 or len(command_line_options) == 1 and command_line_options[0] in ("-h", "--help")
     _config_parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter, add_help=requests_help and not default_config_files, usage='%(prog)s [arguments] [options]')
-    _config_parser.add_argument("configuration_files", nargs="*", default=default_config_files, help="The configuration files to parse. From the second config onward, it can be key=value pairs to create sub-configurations")
+    _config_parser.add_argument("configuration_files", nargs="+", default=default_config_files, help="The configuration files to parse. From the second config onward, it can be key=value pairs to create sub-configurations")
 
     # parse the known args, which should only be config files in our case
     config_file_options = []
     for option in command_line_options:
-        if option[0] == "-": break
+        if option[0] == "-" and option not in ("-h", "--help"): break
         config_file_options.append(option)
     args = _config_parser.parse_args(config_file_options)
 
-    namespace = NameSpace(args.configuration_files[0])
+    namespace = NameSpace(args.configuration_files[0], sub_config_key)
     for cfg in args.configuration_files[1:]:
         splits = cfg.split("=")
         if len(splits)>1:
             namespace.add(splits[0], splits[1])
             for s in splits[2:]:
-                namespace.update(splits[0], s)
+                namespace[splits[0]].update(s)
         else:
             namespace.update(splits[0])
 

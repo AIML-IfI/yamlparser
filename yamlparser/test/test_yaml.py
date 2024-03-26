@@ -8,6 +8,11 @@ def test_yaml_file():
 
     assert hasattr(namespace, "name")
 
+    namespace = yamlparser.NameSpace("yamlparser | test/test_config.yaml")
+    assert hasattr(namespace, "name")
+
+
+
 def test_yaml_dict():
     namespace = yamlparser.NameSpace(dict(name="Name", nested=dict(email="name@host.domain")))
 
@@ -146,6 +151,36 @@ def test_freeze():
     namespace.new_name = "New Name"
 
 
+def test_sub_namespace():
+    # create a namespace that loads another yaml file
+    namespace = yamlparser.NameSpace(dict(
+        name="Name",
+        nested={"yaml":os.path.join(os.path.dirname(__file__), "test_config.yaml"), "name": "new_name"},
+        value=1.
+    ))
+    namespace.freeze()
+    assert hasattr(namespace, "nested")
+    assert hasattr(namespace.nested, "name")
+    assert namespace.nested.name == "new_name"
+    assert hasattr(namespace.nested, "pi")
+    assert hasattr(namespace.nested, "nested")
+    assert hasattr(namespace.nested.nested, "name")
+
+
+    namespace = yamlparser.NameSpace(dict(
+        name="Name",
+        nested={"yaml":"yamlparser|test/test_config.yaml"},
+        value=1.
+    ))
+    namespace.freeze()
+    assert hasattr(namespace, "nested")
+    assert hasattr(namespace.nested, "name")
+    assert hasattr(namespace.nested, "pi")
+    assert hasattr(namespace.nested, "nested")
+    assert hasattr(namespace.nested.nested, "name")
+
+
+
 if __name__ == "__main__":
     test_yaml_file()
     test_yaml_dict()
@@ -153,3 +188,4 @@ if __name__ == "__main__":
     test_io()
     test_format()
     test_freeze()
+    test_sub_namespace()

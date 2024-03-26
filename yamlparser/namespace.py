@@ -1,8 +1,35 @@
 import yaml
 import os
 import pathlib
+import importlib.resources
 
 _modifiable = "_modifiable"
+_sub_config_key = "_sub_config_key"
+
+def list_config_files(package, configuration_file_extensions=[".yaml", ".yml"]):
+    """Lists all configuration files found in the given package that have the given filename extensions.
+    Note that these files might be virtual and not correspond to physical files on the operating system.
+
+    Parameters:
+    package: str
+    The name of the package for which you want to list all configuration files
+
+    configuration_file_extensions: [str]
+    A list of filename extensions of configuration files that should be found
+
+    Returns:
+    A list of (configuration) files with relative paths from within the package.
+
+    """
+    # read resource files within package
+    resource_files = importlib.resources.files(package).rglob("*")
+
+    # filter files with the given extensions
+    return [
+        resource_file
+        for resource_file in resource_files
+        if os.path.splitext(resource_file)[1] in configuration_file_extensions
+    ]
 
 class NameSpace:
     """This is the main class representing our configuration.
@@ -38,18 +65,22 @@ class NameSpace:
     Note that currently, dictionaries contained in lists are not supported (will not be transformed into sub-namespaces).
 
     """
-    def __init__(self, config, modifiable=True):
+    def __init__(self, config, modifiable=True, sub_config_key="yaml"):
         """Initializes this object with the given configuration, which can be a file name (for the yaml config file) or a dictionary
 
         Parameters
         config: str or dict
         A (nested) dictionary or a yaml filename that contains the configuration.
+        When providing a filename, you can also make use of package shortcuts by using `package | relative/path/to/file.yaml`.
 
         modifiable: boolean
         If enabled (the default), this configuration object can be changed by adding new entries.
         Otherwise, trying to add new entries will raise an exception.
 
+        sub_config_key: str
+        When the configuration files contain this key, this is interpreted as an additional linked config file.
         """
+        self._sub_config_key = sub_config_key
         self.update(config)
         self._modifiable = modifiable
 
@@ -73,9 +104,26 @@ class NameSpace:
         """Updates this namespace with the given configuration. Sub-namespaces will be entirely overwritten, not updated."""
         # Updates this namespace with the given config
         # read from yaml file, if it is a file
-        config = self.load(config)
+        loaded_config = self.load(config)
         # recurse through configuration dictionary to build nested namespaces
-        config = {name : NameSpace(value) if isinstance(value, dict) else value for name, value in config.items()}
+        config = {}
+        for name, value in loaded_config.items():
+            if isinstance(value, dict):
+                # create sub-config
+                config[name] = NameSpace(value, self._sub_config_key)
+                # check if there is a sub-config file listed
+                if self._sub_config_key in config[name].dict():
+                    # load config file
+                    sub_config = NameSpace(config[name][self._sub_config_key])
+                    if name not in sub_config.dict().keys():
+                        raise ValueError(f"The sub configuration file {sub_config_file_name} does not contain key {name}")
+                    # set this as the config
+                    config[name] = sub_config[name]
+                    # apply any overwrites from this config file
+                    config[name].update({key:value for key,value in loaded_config[name].items() if key != self._sub_config_key})
+            else:
+                config[name] = value
+        # recurse through namespace and load sub-configurations
         self.__dict__.update(config)
 
     def freeze(self):
@@ -94,13 +142,9 @@ class NameSpace:
                 value.unfreeze()
 
     def load(self, config):
-        """Loads the configuration from the given YAML filename"""
+        """Loads the configuration from the given YAML filename, which might include package | filename"""
         if isinstance(config, (str, pathlib.Path)):
-            if os.path.isfile(config):
-                with open(config, 'r') as f:
-                    config = yaml.safe_load(f)
-            else:
-                raise IOError(f"Could not find configuration file {config}")
+            return self._load_config_file(config)
 
         if not isinstance(config,dict):
             raise ValueError(f"The configuration should be a dictionary")
@@ -175,7 +219,7 @@ class NameSpace:
 
     def dict(self):
         """Returns the entire configuration as a nested dictionary, by converting sub-namespaces"""
-        return {k: v.dict() if isinstance(v, NameSpace) else v for k,v in vars(self).items() if k != _modifiable}
+        return {k: v.dict() if isinstance(v, NameSpace) else v for k,v in vars(self).items() if k not in (_modifiable, _sub_config_key)}
 
     def __repr__(self):
         """Prints the contents of this namespace"""
@@ -213,3 +257,29 @@ class NameSpace:
             raise AttributeError(f"You are trying to add new key {key} to a frozen namespace")
         # call  the original setattr function
         super(NameSpace, self).__setattr__(key,value)
+
+    def _load_config_file(self, config):
+        """Finds the configuration file within a package and loads the configuration"""
+        assert isinstance(config, str), f"The given configuration {config} is not a file name"
+        splits = config.split("|")
+
+        if len(splits) > 2:
+            raise ValueError(f"Could not interpret configuration file {config}")
+
+        if len(splits) == 1:
+            # load config file directly
+            if os.path.isfile(config):
+                with open(config, 'r') as f:
+                    return yaml.safe_load(f)
+            else:
+                raise IOError(f"Could not find configuration file {config}")
+
+        # load config from package resources
+        package, resource = splits
+        resource_file = importlib.resources.files(package.strip()).joinpath(resource.strip())
+        if not resource_file.is_file():
+            raise FileNotFoundError(f"The requested resource file {resource} cannot be found in package {package}")
+        # we only get a context manager here, so we need to load the file directly
+        with importlib.resources.as_file(resource_file) as yaml_file:
+            with open(yaml_file, 'r') as f:
+                return yaml.safe_load(f)
