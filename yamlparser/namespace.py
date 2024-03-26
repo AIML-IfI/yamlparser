@@ -5,6 +5,7 @@ import importlib.resources
 
 _modifiable = "_modifiable"
 _sub_config_key = "_sub_config_key"
+_ignore_keys = [_modifiable, _sub_config_key]
 
 def list_config_files(package, configuration_file_extensions=[".yaml", ".yml"]):
     """Lists all configuration files found in the given package that have the given filename extensions.
@@ -213,13 +214,13 @@ class NameSpace:
                 attributes.update({
                     key+"."+k:v for k,v in (self[key].attributes()).items()
                 })
-            elif key != _modifiable:
+            elif key not in _ignore_keys:
                 attributes[key] = self[key]
         return attributes
 
     def dict(self):
         """Returns the entire configuration as a nested dictionary, by converting sub-namespaces"""
-        return {k: v.dict() if isinstance(v, NameSpace) else v for k,v in vars(self).items() if k not in (_modifiable, _sub_config_key)}
+        return {k: v.dict() if isinstance(v, NameSpace) else v for k,v in vars(self).items() if k not in _ignore_keys}
 
     def __repr__(self):
         """Prints the contents of this namespace"""
@@ -242,7 +243,7 @@ class NameSpace:
 
     def __getattr__(self, key):
         """Allows adding new sub-namespaces inline"""
-        if key == _modifiable:
+        if key in _ignore_keys:
             return self.__getattribute__(key)
         if not self._modifiable:
             raise AttributeError(f"You are trying to add new key {key} to a frozen namespace")
