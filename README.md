@@ -55,7 +55,12 @@ Similarly, `NameSpace`'s can load these dictionaries directly from a YAML file:
 
 This YAML file can also be loaded from within a package by providing the package name and a relative path:
 
-    namespace = yamlparser.NameSpace("package | relative/path/to/config.yaml")
+    namespace = yamlparser.NameSpace("package @ relative/path/to/config.yaml")
+
+As long as file names are unique, you can also omit (parts of) the path to the config file in the package:
+
+    namespace = yamlparser.NameSpace("package @ config.yaml")
+
 
 A list of such configuration files inside any package can be obtained via:
 

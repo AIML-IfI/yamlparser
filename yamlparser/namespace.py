@@ -72,7 +72,8 @@ class NameSpace:
         Parameters
         config: str or dict
         A (nested) dictionary or a yaml filename that contains the configuration.
-        When providing a filename, you can also make use of package shortcuts by using `package | relative/path/to/file.yaml`.
+        When providing a filename, you can also make use of package shortcuts by using `package @ relative/path/to/file.yaml`.
+        It is also possible to omit (parts of) the path as long as the file name is unique, e.g., `package@file.yaml`.
 
         modifiable: boolean
         If enabled (the default), this configuration object can be changed by adding new entries.
@@ -143,7 +144,7 @@ class NameSpace:
                 value.unfreeze()
 
     def load(self, config):
-        """Loads the configuration from the given YAML filename, which might include package | filename"""
+        """Loads the configuration from the given YAML filename, which might include package @ filename"""
         if isinstance(config, (str, pathlib.Path)):
             return self._load_config_file(config)
 
@@ -262,25 +263,31 @@ class NameSpace:
     def _load_config_file(self, config):
         """Finds the configuration file within a package and loads the configuration"""
         assert isinstance(config, str), f"The given configuration {config} is not a file name"
-        splits = config.split("|")
-
-        if len(splits) > 2:
-            raise ValueError(f"Could not interpret configuration file {config}")
+        splits = config.split("@")
 
         if len(splits) == 1:
             # load config file directly
-            if os.path.isfile(config):
-                with open(config, 'r') as f:
-                    return yaml.safe_load(f)
-            else:
-                raise IOError(f"Could not find configuration file {config}")
+            config = splits[0].strip()
 
-        # load config from package resources
-        package, resource = splits
-        resource_file = importlib.resources.files(package.strip()).joinpath(resource.strip())
-        if not resource_file.is_file():
-            raise FileNotFoundError(f"The requested resource file {resource} cannot be found in package {package}")
-        # we only get a context manager here, so we need to load the file directly
-        with importlib.resources.as_file(resource_file) as yaml_file:
-            with open(yaml_file, 'r') as f:
+        elif len(splits) == 2:
+            # load config from package resources
+            package = splits[0].strip()
+            resource = pathlib.Path(splits[1].strip())
+            # list all resource files within the package
+            package_files = list_config_files(package, [resource.suffix])
+            # find possible candidates for resource files
+            candidates = [f for f in package_files if str(f).endswith(str(resource))]
+            if not len(candidates):
+                raise ValueError(f"Could not find configuration file {resource} in package {package}; possible files are: {package_files}")
+            if len(candidates) > 1:
+                raise ValueError(f"The given config file {resource} is not unique in package {package}; candidates are: {candidates}")
+            # take the unique file
+            config = candidates[0]
+
+        else:
+            raise ValueError(f"Could not interpret configuration file {config}")
+
+
+        if os.path.isfile(config):
+            with open(config, 'r') as f:
                 return yaml.safe_load(f)

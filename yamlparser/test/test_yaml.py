@@ -3,14 +3,18 @@ import os
 import tempfile
 
 def test_yaml_file():
+    # test import from explicit file
     yaml_file = os.path.join(os.path.dirname(__file__), "test_config.yaml")
     namespace = yamlparser.NameSpace(yaml_file)
-
     assert hasattr(namespace, "name")
 
-    namespace = yamlparser.NameSpace("yamlparser | test/test_config.yaml")
+    # test import from package with full path
+    namespace = yamlparser.NameSpace("yamlparser @ test/test_config.yaml")
     assert hasattr(namespace, "name")
 
+    # test import from package with short path
+    namespace = yamlparser.NameSpace("yamlparser @ test_config.yaml")
+    assert hasattr(namespace, "name")
 
 
 def test_yaml_dict():
@@ -169,7 +173,7 @@ def test_sub_namespace():
 
     namespace = yamlparser.NameSpace(dict(
         name="Name",
-        nested={"yaml":"yamlparser|test/test_config.yaml"},
+        nested={"yaml":"yamlparser@test_config.yaml"},
         value=1.
     ))
     namespace.freeze()
