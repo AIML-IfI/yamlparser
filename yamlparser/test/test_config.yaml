@@ -13,3 +13,5 @@ nested:
 
     nested:
         name: subnested
+
+some.dot.attribute: 42
