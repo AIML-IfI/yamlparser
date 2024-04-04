@@ -19,6 +19,11 @@ class TestArgparse(unittest.TestCase):
                 "nested": {
                     "name": "subnested"
                 },
+            },
+            "some": {
+                "dot": {
+                    "attribute": 42
+                }
             }
         })
         self.assertEqual(namespace.dump(), expected.dump())

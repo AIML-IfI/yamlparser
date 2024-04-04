@@ -110,22 +110,33 @@ class NameSpace:
         # recurse through configuration dictionary to build nested namespaces
         config = {}
         for name, value in loaded_config.items():
-            if isinstance(value, dict):
-                # create sub-config
-                config[name] = NameSpace(value, self._sub_config_key)
-                # check if there is a sub-config file listed
-                if self._sub_config_key in config[name].dict():
-                    # load config file
-                    sub_config = NameSpace(config[name][self._sub_config_key])
-                    if name not in sub_config.dict().keys():
-                        raise ValueError(f"The sub configuration file {sub_config_file_name} does not contain key {name}")
-                    # set this as the config
-                    config[name] = sub_config[name]
-                    # apply any overwrites from this config file
-                    config[name].update({key:value for key,value in loaded_config[name].items() if key != self._sub_config_key})
+            # if the name contains at least one period, we have a nested namespace
+            if "." in name:
+                # split the name into the first part and the rest
+                first, rest = name.split(".", 1)
+                # create a new namespace if not existing
+                if first not in config:
+                    config[first] = NameSpace({})
+                # update the sub-namespace
+                config[first].update({rest:value})
             else:
-                config[name] = value
-        # recurse through namespace and load sub-configurations
+
+                if isinstance(value, dict):
+                    # create sub-config
+                    config[name] = NameSpace(value, self._sub_config_key)
+                    # check if there is a sub-config file listed
+                    if self._sub_config_key in config[name].dict():
+                        # load config file
+                        sub_config = NameSpace(config[name][self._sub_config_key])
+                        if name not in sub_config.dict().keys():
+                            raise ValueError(f"The sub configuration file {sub_config_file_name} does not contain key {name}")
+                        # set this as the config
+                        config[name] = sub_config[name]
+                        # apply any overwrites from this config file
+                        config[name].update({key:value for key,value in loaded_config[name].items() if key != self._sub_config_key})
+                else:
+                    config[name] = value
+            # recurse through namespace and load sub-configurations
         self.__dict__.update(config)
 
     def freeze(self):
