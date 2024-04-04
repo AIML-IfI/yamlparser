@@ -19,6 +19,11 @@ class TestArgparse(unittest.TestCase):
                 "nested": {
                     "name": "subnested"
                 },
+                "another": {
+                    "dot": {
+                        "attribute": 37
+                    }
+                }
             },
             "some": {
                 "dot": {
