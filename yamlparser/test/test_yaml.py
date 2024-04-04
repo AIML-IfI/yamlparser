@@ -178,6 +178,11 @@ class TestYaml(unittest.TestCase):
                 "yaml":os.path.join(os.path.dirname(__file__), "test_config.yaml"), 
                 "name": "new_name",
                 "sub_nested.name": "new_sub_name",
+                "sub_nested.number": 12,
+                # FIXME: this corner case is not yet supported (i.e. can't override nested values by specifying a nested parameter)
+                # "sub_nested": {
+                #     "e": 3
+                # }
             },
             value=1.
         ))
@@ -189,6 +194,9 @@ class TestYaml(unittest.TestCase):
         self.assertTrue(hasattr(namespace.nested, "pi"))
         self.assertTrue(hasattr(namespace.nested, "sub_nested"))
         self.assertTrue(hasattr(namespace.nested.sub_nested, "name"))
+        self.assertTrue(hasattr(namespace.nested.sub_nested, "number"))
+        # FIXME: this corner case is not yet supported (i.e. can't override nested values by specifying a nested parameter)
+        # self.assertTrue(hasattr(namespace.nested.sub_nested, "e"))
         self.assertTrue(hasattr(namespace.nested, "another"))
         self.assertTrue(hasattr(namespace.nested.another, "dot"))
         self.assertTrue(hasattr(namespace.nested.another.dot, "attribute"))
@@ -196,6 +204,9 @@ class TestYaml(unittest.TestCase):
         # test that the values are correctly overridden
         self.assertEqual(namespace.nested.name, "new_name")
         self.assertEqual(namespace.nested.sub_nested.name, "new_sub_name")
+        self.assertEqual(namespace.nested.sub_nested.number, 12)
+        # FIXME: this corner case is not yet supported (i.e. can't override nested values by specifying a nested parameter)
+        # self.assertEqual(namespace.nested.e, 3)
 
 
 if __name__ == "__main__":

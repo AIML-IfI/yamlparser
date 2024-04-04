@@ -13,6 +13,8 @@ nested:
 
     sub_nested:
         name: subnested
+        e: 2.7182
+        number: 12
     another.dot.attribute: 37
 
 some.dot.attribute: 42
