@@ -115,7 +115,7 @@ class NameSpace:
                 # split the name into the first part and the rest
                 first, rest = name.split(".", 1)
                 # create a new namespace if not existing
-                if first not in config:
+                if first not in config.keys():
                     config[first] = NameSpace({})
                 # update the sub-namespace
                 config[first].update({rest:value})
@@ -125,11 +125,11 @@ class NameSpace:
                     # create sub-config
                     config[name] = NameSpace(value, self._sub_config_key)
                     # check if there is a sub-config file listed
-                    if self._sub_config_key in config[name].dict():
+                    if self._sub_config_key in config[name].dict().keys():
                         # load config file
                         sub_config = NameSpace(config[name][self._sub_config_key])
                         if name not in sub_config.dict().keys():
-                            raise ValueError(f"The sub configuration file {sub_config_file_name} does not contain key {name}")
+                            raise ValueError(f"The sub configuration file {config[name][self._sub_config_key]} does not contain key {name}")
                         # set this as the config
                         config[name] = sub_config[name]
                         # apply any overwrites from this config file
