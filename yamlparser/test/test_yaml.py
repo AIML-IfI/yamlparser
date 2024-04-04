@@ -35,7 +35,7 @@ class TestYaml(unittest.TestCase):
         self.assertTrue(hasattr(namespace.nested, "name"))
         self.assertTrue(hasattr(namespace.nested, "pi"))
         self.assertTrue(hasattr(namespace.nested, "nested"))
-        self.assertTrue(hasattr(namespace.nested.nested, "name"))
+        self.assertTrue(hasattr(namespace.nested.sub_nested, "name"))
         self.assertTrue(hasattr(namespace.nested, "another"))
         self.assertTrue(hasattr(namespace.nested.another, "dot"))
         self.assertTrue(hasattr(namespace.nested.another.dot, "attribute"))
@@ -48,7 +48,7 @@ class TestYaml(unittest.TestCase):
         self.assertEqual(namespace.list_value, [10, 42, 101])
         self.assertEqual(namespace.nested.name, "nested_test")
         self.assertEqual(namespace.nested.pi, 3.14159265)
-        self.assertEqual(namespace.nested.nested.name, "subnested")
+        self.assertEqual(namespace.nested.sub_nested.name, "subnested")
         self.assertEqual(namespace.nested.another.dot.attribute, 37)
         
 
@@ -169,33 +169,33 @@ class TestYaml(unittest.TestCase):
         namespace.new_name = "New Name"
 
 
-    def test_sub_namespace(self):
+    def test_sub_namespace_override(self):
+        """test loading a subnamespace and overriding values in a sub-namespace"""
         # create a namespace that loads another yaml file
         namespace = yamlparser.NameSpace(dict(
             name="Name",
-            nested={"yaml":os.path.join(os.path.dirname(__file__), "test_config.yaml"), "name": "new_name"},
+            nested={
+                "yaml":os.path.join(os.path.dirname(__file__), "test_config.yaml"), 
+                "name": "new_name",
+                "sub_nested.name": "new_sub_name",
+            },
             value=1.
         ))
         namespace.freeze()
+
+        # test accessing keys of the sub-namespace
+        self.assertTrue(hasattr(namespace, "nested"))
+        self.assertTrue(hasattr(namespace.nested, "name"))
+        self.assertTrue(hasattr(namespace.nested, "pi"))
+        self.assertTrue(hasattr(namespace.nested, "sub_nested"))
+        self.assertTrue(hasattr(namespace.nested.sub_nested, "name"))
+        self.assertTrue(hasattr(namespace.nested, "another"))
+        self.assertTrue(hasattr(namespace.nested.another, "dot"))
+        self.assertTrue(hasattr(namespace.nested.another.dot, "attribute"))
+
+        # test that the values are correctly overridden
         self.assertEqual(namespace.nested.name, "new_name")
-        self.assertTrue(hasattr(namespace, "nested"))
-        self.assertTrue(hasattr(namespace.nested, "name"))
-        self.assertTrue(hasattr(namespace.nested, "pi"))
-        self.assertTrue(hasattr(namespace.nested, "nested"))
-        self.assertTrue(hasattr(namespace.nested.nested, "name"))
-
-        namespace = yamlparser.NameSpace(dict(
-            name="Name",
-            nested={"yaml":"yamlparser@test_config.yaml"},
-            value=1.
-        ))
-        namespace.freeze()
-        self.assertTrue(hasattr(namespace, "nested"))
-        self.assertTrue(hasattr(namespace.nested, "name"))
-        self.assertTrue(hasattr(namespace.nested, "pi"))
-        self.assertTrue(hasattr(namespace.nested, "nested"))
-        self.assertTrue(hasattr(namespace.nested.nested, "name"))
-
+        self.assertEqual(namespace.nested.sub_nested.name, "new_sub_name")
 
 
 if __name__ == "__main__":

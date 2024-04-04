@@ -11,7 +11,7 @@ nested:
     name: nested_test
     pi: 3.14159265
 
-    nested:
+    sub_nested:
         name: subnested
     another.dot.attribute: 37
 
