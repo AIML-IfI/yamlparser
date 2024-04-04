@@ -5,22 +5,57 @@ import unittest
 
 class TestYaml(unittest.TestCase):
 
-    def test_yaml_file(self):
+    def test_load_yaml_from_path(self):
+        """test various ways of importing yaml files"""
+
         # test import from explicit file
         yaml_file = os.path.join(os.path.dirname(__file__), "test_config.yaml")
-        namespace = yamlparser.NameSpace(yaml_file)
-        assert hasattr(namespace, "name")
-
+        namespace_explicit = yamlparser.NameSpace(yaml_file)
+        
         # test import from package with full path
-        namespace = yamlparser.NameSpace("yamlparser @ test/test_config.yaml")
-        self.assertTrue(hasattr(namespace, "name"))
+        namespace_full = yamlparser.NameSpace("yamlparser @ test/test_config.yaml")
 
         # test import from package with short path
-        namespace = yamlparser.NameSpace("yamlparser @ test_config.yaml")
-        self.assertTrue(hasattr(namespace, "name"))
+        namespace_short = yamlparser.NameSpace("yamlparser @ test_config.yaml")
 
+        self.assertEqual(namespace_explicit.dump(), namespace_full.dump())
+        self.assertEqual(namespace_explicit.dump(), namespace_short.dump())
+        self.assertEqual(namespace_full.dump(), namespace_short.dump())
+
+    def test_load_yaml_attributes(self):
+        """test that all attributes and their values are loaded correctly from the yaml file"""
+
+        # import from explicit file
+        yaml_file = os.path.join(os.path.dirname(__file__), "test_config.yaml")
+        namespace = yamlparser.NameSpace(yaml_file)
+        self.assertTrue(hasattr(namespace, "name"))
+        self.assertTrue(hasattr(namespace, "int_value"))
+        self.assertTrue(hasattr(namespace, "list_value"))
+        self.assertTrue(hasattr(namespace, "nested"))
+        self.assertTrue(hasattr(namespace.nested, "name"))
+        self.assertTrue(hasattr(namespace.nested, "pi"))
+        self.assertTrue(hasattr(namespace.nested, "nested"))
+        self.assertTrue(hasattr(namespace.nested.nested, "name"))
+        self.assertTrue(hasattr(namespace.nested, "another"))
+        self.assertTrue(hasattr(namespace.nested.another, "dot"))
+        self.assertTrue(hasattr(namespace.nested.another.dot, "attribute"))
+        self.assertTrue(hasattr(namespace, "some"))
+        self.assertTrue(hasattr(namespace.some, "dot"))
+        self.assertTrue(hasattr(namespace.some.dot, "attribute"))
+        
+        self.assertEqual(namespace.name, "test")
+        self.assertEqual(namespace.int_value, 42)
+        self.assertEqual(namespace.list_value, [10, 42, 101])
+        self.assertEqual(namespace.nested.name, "nested_test")
+        self.assertEqual(namespace.nested.pi, 3.14159265)
+        self.assertEqual(namespace.nested.nested.name, "subnested")
+        self.assertEqual(namespace.nested.another.dot.attribute, 37)
+        
 
     def test_yaml_dict(self):
+        """test creating a namespace from a dictionary"""
+        # TODO: this test is convoluted and tests too many different things at once, such as indexing methods, creating namespace from dict
+
         namespace = yamlparser.NameSpace(dict(name="Name", nested=dict(email="name@host.domain")))
 
         # check that all the values are stored correctly and can be indexed and attributed
@@ -31,7 +66,6 @@ class TestYaml(unittest.TestCase):
         self.assertIsInstance(namespace["nested"], yamlparser.NameSpace)
         self.assertEqual(namespace.nested.email, "name@host.domain")
         self.assertEqual(namespace["nested"]["email"], "name@host.domain")
-
 
 
     def test_extend(self):
@@ -161,7 +195,6 @@ class TestYaml(unittest.TestCase):
         self.assertTrue(hasattr(namespace.nested, "pi"))
         self.assertTrue(hasattr(namespace.nested, "nested"))
         self.assertTrue(hasattr(namespace.nested.nested, "name"))
-
 
 
 

@@ -129,7 +129,7 @@ class NameSpace:
                         # load config file
                         sub_config = NameSpace(config[name][self._sub_config_key])
                         if name not in sub_config.dict().keys():
-                            raise ValueError(f"The sub configuration file {config[name][self._sub_config_key]} does not contain key {name}")
+                            raise ValueError(f"The sub configuration file {config[name][self._sub_config_key]} does not contain key '{name}'")
                         # set this as the config
                         config[name] = sub_config[name]
                         # apply any overwrites from this config file

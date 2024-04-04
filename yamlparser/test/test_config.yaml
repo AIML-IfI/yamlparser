@@ -13,5 +13,6 @@ nested:
 
     nested:
         name: subnested
+    another.dot.attribute: 37
 
 some.dot.attribute: 42
