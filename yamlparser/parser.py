@@ -11,7 +11,7 @@ def config_parser(
         parser=None,
         default_config_files=None,
         infer_types=True,
-        ingnore_keys=[],
+        ignore_keys=[],
         add_config_files=False,
         command_line_options=None,
         store_config=True,
@@ -88,7 +88,7 @@ def config_parser(
     parser.add_argument("configuration_files", nargs="*", default=default_config_files, help="The configuration files to parse. From the second config onward, it be key=value pairs to create sub-configurations")
 
     for k,v in attributes.items():
-        if k in ingnore_keys: continue
+        if k in ignore_keys: continue
         metavar = k.split(".")[-1].upper()
         option = "--"+k
         if isinstance(v, list):
