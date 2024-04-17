@@ -86,6 +86,15 @@ class NameSpace:
         self.update(config)
         self._modifiable = modifiable
 
+    def clone(self):
+        """Returns a copy of this namespace"""
+        return NameSpace(self.dict())
+
+    def keys(self):
+        """Returns the current list of keys in this namespace"""
+        return self.dict().keys()
+
+
     def add(self, key, config):
         """Adds the given configuration as a sub-namespace.
         This is identical to `self.key = NameSpace(config)`"""
@@ -101,6 +110,17 @@ class NameSpace:
             getattr(self,keys[0]).set(".".join(keys[1:]), value)
         else:
             self[key] = value
+
+    def delete(self, key):
+        """Removes the given key from this namespace. The key can contain periods, which are parsed into sub-namespaces"""
+        if not self._modifiable:
+            raise AttributeError(f"You are trying to delete key {key} from a frozen namespace")
+
+        keys = key.split(".")
+        if len(keys) > 1:
+            self[keys[0]].delete(".".join(keys[1:]))
+        else:
+            delattr(self, key)
 
     def update(self, config):
         """Updates this namespace with the given configuration. Sub-namespaces will be entirely overwritten, not updated."""

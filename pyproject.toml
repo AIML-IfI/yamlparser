@@ -4,10 +4,8 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "yamlparser"
-version = "0.1.4"
-authors = [
-  { name="Manuel Guenther", email="siebenkopf@googlemail.com" },
-]
+version = "0.1.5"
+authors = [{name="Manuel Guenther", email="siebenkopf@googlemail.com"}]
 description = "A Package to combine YAML configurations and argument parsing"
 readme = "README.md"
 requires-python = ">=3.7"

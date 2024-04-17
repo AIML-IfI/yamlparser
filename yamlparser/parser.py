@@ -15,6 +15,7 @@ def config_parser(
         add_config_files=False,
         command_line_options=None,
         store_config=True,
+        auto_format=True,
         sub_config_key="yaml"
     ):
     """Creates or updates an `argparse.ArgumentParser` with the option to load configuration files (YAML).
@@ -41,12 +42,16 @@ def config_parser(
 
     command_line_options: list or None
     For debugging purposes, a list of command line options is accepted. This is mainly a debug and test feature.
-    If not present, `sys.agrv[1:]` is selected, as usual.
+    If not present, `sys.argv[1:]` is selected, as usual.
 
     store_config: bool
     If selected (the default), the configuration will be stored in a global object that can be accessed via py:func:`get_config()`.
     Note that, in this case, the configuration is frozen and can no longer be updated (unless unfreeze is called).
     Note further that all string variables are automatically evaluated.
+
+    auto_format: bool
+    If selected (the default), the configuration will be formatted such that {key} values are replaced with the actual values in the configuration.
+    You can later call namespace.format_self() in order to format it.
 
     sub_config_key: str
     When the configuration files contain this key, this is interpreted as an additional linked config file.
@@ -85,13 +90,20 @@ def config_parser(
     # create a parser entry for these types
     if parser is None:
         parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter, usage='%(prog)s configuration_files [options]')
+
+    existing_options = list(parser._option_string_actions.keys())
+
     parser.add_argument("configuration_files", nargs="*", default=default_config_files, help="The configuration files to parse. From the second config onward, it be key=value pairs to create sub-configurations")
 
     for k,v in attributes.items():
         if k in ignore_keys: continue
         metavar = k.split(".")[-1].upper()
         option = "--"+k
-        if isinstance(v, list):
+        if option in existing_options:
+            # option was requested in the parser, but we already have this option
+            # in this case, we update the default value with the one read from the config
+            parser._option_string_actions[option].default = v
+        elif isinstance(v, list):
             parser.add_argument(option, metavar=metavar, nargs="+", type=type(v[0]) if infer_types else None, help=f"Overwrite list of values for {k}, default={v}")
         else:
             parser.add_argument(option, metavar=metavar, type=type(v) if infer_types else None, help=f"Overwrite value for {k}, content of configuration file: `{v}`")
@@ -105,12 +117,14 @@ def config_parser(
             if v is not None:
                 namespace.set(k,v)
 
+    if auto_format:
+        namespace.format_self()
+
     if store_config:
         global _config
         if _config is not None:
             warnings.warn("The configuration has already been set, overwriting it.")
         _config = namespace
-        _config.format_self()
         _config.freeze()
 
     return namespace

@@ -11,7 +11,7 @@ class TestYaml(unittest.TestCase):
         # test import from explicit file
         yaml_file = os.path.join(os.path.dirname(__file__), "test_config.yaml")
         namespace_explicit = yamlparser.NameSpace(yaml_file)
-        
+
         # test import from package with full path
         namespace_full = yamlparser.NameSpace("yamlparser @ test/test_config.yaml")
 
@@ -42,7 +42,7 @@ class TestYaml(unittest.TestCase):
         self.assertTrue(hasattr(namespace, "some"))
         self.assertTrue(hasattr(namespace.some, "dot"))
         self.assertTrue(hasattr(namespace.some.dot, "attribute"))
-        
+
         self.assertEqual(namespace.name, "test")
         self.assertEqual(namespace.int_value, 42)
         self.assertEqual(namespace.list_value, [10, 42, 101])
@@ -50,7 +50,7 @@ class TestYaml(unittest.TestCase):
         self.assertEqual(namespace.nested.pi, 3.14159265)
         self.assertEqual(namespace.nested.sub_nested.name, "subnested")
         self.assertEqual(namespace.nested.another.dot.attribute, 37)
-        
+
 
     def test_yaml_dict(self):
         """test creating a namespace from a dictionary"""
@@ -163,7 +163,7 @@ class TestYaml(unittest.TestCase):
             namespace.set("new_name", "New Name")
             namespace.name = "New Name"
             namespace["name"] = "New Name"
-            
+
         # try to unfreeze
         namespace.unfreeze()
         namespace.new_name = "New Name"
@@ -175,7 +175,7 @@ class TestYaml(unittest.TestCase):
         namespace = yamlparser.NameSpace(dict(
             name="Name",
             nested={
-                "yaml":os.path.join(os.path.dirname(__file__), "test_config.yaml"), 
+                "yaml":os.path.join(os.path.dirname(__file__), "test_config.yaml"),
                 "name": "new_name",
                 "sub_nested.name": "new_sub_name",
                 "sub_nested.number": 12,
@@ -207,6 +207,22 @@ class TestYaml(unittest.TestCase):
         self.assertEqual(namespace.nested.sub_nested.number, 12)
         # FIXME: this corner case is not yet supported (i.e. can't override nested values by specifying a nested parameter)
         # self.assertEqual(namespace.nested.e, 3)
+
+
+    def test_delete(self):
+
+        namespace = yamlparser.NameSpace(dict(name="Name", nested=dict(email="name@host.domain")))
+
+        self.assertTrue(hasattr(namespace, "name"))
+        namespace.delete("name")
+        namespace.delete("nested.email")
+        namespace.freeze()
+        self.assertTrue("name" not in namespace.keys())
+        self.assertFalse(hasattr(namespace, "name"))
+        self.assertTrue(hasattr(namespace, "nested"))
+        self.assertFalse(hasattr(namespace["nested"], "email"))
+
+
 
 
 if __name__ == "__main__":
