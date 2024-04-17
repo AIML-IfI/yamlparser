@@ -16,8 +16,10 @@ class TestArgparse(unittest.TestCase):
             "nested": {
                 "name": "nested_test",
                 "pi": 3.14159265,
-                "nested": {
-                    "name": "subnested"
+                "sub_nested": {
+                    "name": "subnested",
+                    "e": 2.7182,
+                    "number":  12
                 },
                 "another": {
                     "dot": {
