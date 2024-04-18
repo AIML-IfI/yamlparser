@@ -83,12 +83,13 @@ class NameSpace:
         When the configuration files contain this key, this is interpreted as an additional linked config file.
         """
         self._sub_config_key = sub_config_key
+        self._modifiable = True
         self.update(config)
         self._modifiable = modifiable
 
     def clone(self):
         """Returns a copy of this namespace"""
-        return NameSpace(self.dict())
+        return NameSpace(self.dict(), self._modifiable, self._sub_config_key)
 
     def keys(self):
         """Returns the current list of keys in this namespace"""
@@ -99,7 +100,7 @@ class NameSpace:
         """Adds the given configuration as a sub-namespace.
         This is identical to `self.key = NameSpace(config)`"""
         # adds a different config file into a sub-namespace
-        self[key] = NameSpace(config)
+        self[key] = NameSpace(config, self._modifiable, self._sub_config_key)
 
     def set(self, key, value):
         """Sets a value for a given key. This key can contain periods, which are parsed to index sub-namespaces"""
@@ -122,6 +123,28 @@ class NameSpace:
         else:
             delattr(self, key)
 
+    def _load_subconfig(self, name, value):
+        # create sub-config
+        namespace = NameSpace(value, self._modifiable, self._sub_config_key)
+        # check if there is a sub-config file listed
+        if self._sub_config_key in namespace.keys():
+            # load config file
+            sub_config = NameSpace(namespace[self._sub_config_key], self._modifiable, self._sub_config_key)
+            keys = list(sub_config.keys())
+            if name in keys:
+                # set this as the config
+                namespace = sub_config[name]
+            else:
+                if len(keys) == 1:
+                    # set this as the config
+                    namespace = sub_config[keys[0]]
+                else:
+                    raise ValueError(f"The sub configuration file {namespace[self._sub_config_key]} has several keys, but not including  '{name}'")
+            # apply any overwrites from this config file
+            namespace.update({key:value for key,value in value.items() if key != self._sub_config_key})
+        return namespace
+
+
     def update(self, config):
         """Updates this namespace with the given configuration. Sub-namespaces will be entirely overwritten, not updated."""
         # Updates this namespace with the given config
@@ -136,27 +159,24 @@ class NameSpace:
                 first, rest = name.split(".", 1)
                 # create a new namespace if not existing
                 if first not in config.keys():
-                    config[first] = NameSpace({})
+                    config[first] = NameSpace({}, self._modifiable, self._sub_config_key)
                 # update the sub-namespace
                 config[first].update({rest:value})
             else:
 
                 if isinstance(value, dict):
-                    # create sub-config
-                    config[name] = NameSpace(value, self._sub_config_key)
-                    # check if there is a sub-config file listed
-                    if self._sub_config_key in config[name].dict().keys():
-                        # load config file
-                        sub_config = NameSpace(config[name][self._sub_config_key])
-                        if name not in sub_config.dict().keys():
-                            raise ValueError(f"The sub configuration file {config[name][self._sub_config_key]} does not contain key '{name}'")
-                        # set this as the config
-                        config[name] = sub_config[name]
-                        # apply any overwrites from this config file
-                        config[name].update({key:value for key,value in loaded_config[name].items() if key != self._sub_config_key})
+                    config[name] = self._load_subconfig(name, value)
+                elif isinstance(value, list):
+                    config[name] = []
+                    for element in value:
+                        if isinstance(element, dict):
+                            config[name].append(self._load_subconfig(name, element))
+                        else:
+                            config[name].append(element)
                 else:
                     config[name] = value
-            # recurse through namespace and load sub-configurations
+
+        # update configuration
         self.__dict__.update(config)
 
     def freeze(self):
@@ -269,7 +289,7 @@ class NameSpace:
         if not self._modifiable:
             raise AttributeError(f"You are trying to set key {key} in a frozen namespace")
         if isinstance(value, dict):
-            self.__dict__.update({key:NameSpace(value)})
+            self.__dict__.update({key:NameSpace(value, self._modifiable, self._sub_config_key)})
         else:
             self.__dict__.update({key:value})
 
@@ -280,7 +300,7 @@ class NameSpace:
         if not self._modifiable:
             raise AttributeError(f"You are trying to add new key {key} to a frozen namespace")
         # create new empty namespace if not existing
-        namespace = NameSpace({})
+        namespace = NameSpace({}, self._modifiable, self._sub_config_key)
         self.update({key:namespace})
         return namespace
 
@@ -290,6 +310,14 @@ class NameSpace:
             raise AttributeError(f"You are trying to add new key {key} to a frozen namespace")
         # call  the original setattr function
         super(NameSpace, self).__setattr__(key,value)
+
+    def __getstate__(self):
+        """No idea why this is required"""
+        return self.__dict__
+
+    def __setstate__(self, value):
+        """No idea why this is required"""
+        self.__dict__.update(value)
 
     def _load_config_file(self, config):
         """Finds the configuration file within a package and loads the configuration"""

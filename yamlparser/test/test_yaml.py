@@ -223,6 +223,47 @@ class TestYaml(unittest.TestCase):
         self.assertFalse(hasattr(namespace["nested"], "email"))
 
 
+    def test_nested_lists(self):
+
+        # check that nested lists are handled correctly, i.e., transformed to NameSpaces
+        namespace = yamlparser.NameSpace(
+            dict(name="Name",
+                 nested=[
+                     dict(email="name@host.domain"),
+                     dict(other="other@host.domain"),
+                ]
+            )
+        )
+
+        self.assertTrue(hasattr(namespace, "name"))
+        self.assertTrue(hasattr(namespace, "nested"))
+        self.assertTrue(isinstance(namespace.nested, list))
+        self.assertEqual(len(namespace.nested), 2)
+        self.assertIsInstance(namespace.nested[0], yamlparser.NameSpace)
+        self.assertIsInstance(namespace.nested[1], yamlparser.NameSpace)
+        self.assertTrue("email" in namespace.nested[0].keys())
+        self.assertTrue("other" in namespace.nested[1].keys())
+
+
+        # check that nested sub-namespaces are loaded correctly within lists
+        namespace = yamlparser.NameSpace(
+            dict(name="Name",
+                 nested=[
+                     dict(yaml=os.path.join(os.path.dirname(__file__), "test_config.yaml")),
+                     dict(yaml=os.path.join(os.path.dirname(__file__), "test_config.yaml")),
+                ]
+            )
+        )
+
+        self.assertTrue(hasattr(namespace, "name"))
+        self.assertTrue(hasattr(namespace, "nested"))
+        self.assertIsInstance(namespace.nested, list)
+        self.assertEqual(len(namespace.nested), 2)
+        self.assertIsInstance(namespace.nested[0], yamlparser.NameSpace)
+        self.assertIsInstance(namespace.nested[1], yamlparser.NameSpace)
+        self.assertTrue("pi" in namespace.nested[0].keys())
+        self.assertTrue("sub_nested" in namespace.nested[1].keys())
+
 
 
 if __name__ == "__main__":
