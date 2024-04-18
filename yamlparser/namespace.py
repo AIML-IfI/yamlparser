@@ -346,7 +346,8 @@ class NameSpace:
         else:
             raise ValueError(f"Could not interpret configuration file {config}")
 
+        if not os.path.isfile(config):
+            raise IOError(f"Could not find config file {config}")
 
-        if os.path.isfile(config):
-            with open(config, 'r') as f:
-                return yaml.safe_load(f)
+        with open(config, 'r') as f:
+            return yaml.safe_load(f)

@@ -22,6 +22,9 @@ class TestYaml(unittest.TestCase):
         self.assertEqual(namespace_explicit.dump(), namespace_short.dump())
         self.assertEqual(namespace_full.dump(), namespace_short.dump())
 
+        with self.assertRaises(IOError):
+            yamlparser.NameSpace("path/to/nowhere.yaml")
+
     def test_load_yaml_attributes(self):
         """test that all attributes and their values are loaded correctly from the yaml file"""
 
