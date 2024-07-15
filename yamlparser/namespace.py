@@ -272,7 +272,16 @@ class NameSpace:
 
     def dict(self):
         """Returns the entire configuration as a nested dictionary, by converting sub-namespaces"""
-        return {k: v.dict() if isinstance(v, NameSpace) else v for k,v in vars(self).items() if k not in _ignore_keys}
+        d = {}
+        for k,v in vars(self).items():
+            if not k in _ignore_keys:
+                if isinstance(v, NameSpace):
+                    d[k] = v.dict()
+                elif isinstance(v, list):
+                    d[k] = [i.dict() if isinstance(i, NameSpace) else i for i in v]
+                else:
+                    d[k] = v
+        return d
 
     def __repr__(self):
         """Prints the contents of this namespace"""
