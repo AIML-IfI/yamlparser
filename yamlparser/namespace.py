@@ -128,6 +128,8 @@ class NameSpace:
         namespace = NameSpace(value, self._modifiable, self._sub_config_key)
         # check if there is a sub-config file listed
         if self._sub_config_key in namespace.keys():
+            if not isinstance(namespace[self._sub_config_key], str):
+                raise ValueError(f"The '{self._sub_config_key}' keyword requires a file name, but we got '{namespace[self._sub_config_key]}' instead")
             # load config file
             sub_config = NameSpace(namespace[self._sub_config_key], self._modifiable, self._sub_config_key)
             keys = list(sub_config.keys())
