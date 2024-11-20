@@ -52,6 +52,7 @@ def config_parser(
     auto_format: bool
     If selected (the default), the configuration will be formatted such that {key} values are replaced with the actual values in the configuration.
     You can later call namespace.format_self() in order to format it.
+    Note that `None` values (aka. `null` in the yaml file) will be replaced by `str`.
 
     sub_config_key: str
     When the configuration files contain this key, this is interpreted as an additional linked config file.
@@ -99,14 +100,17 @@ def config_parser(
         if k in ignore_keys: continue
         metavar = k.split(".")[-1].upper()
         option = "--"+k
+
         if option in existing_options:
             # option was requested in the parser, but we already have this option
             # in this case, we update the default value with the one read from the config
             parser._option_string_actions[option].default = v
         elif isinstance(v, list):
-            parser.add_argument(option, metavar=metavar, nargs="+", type=type(v[0]) if infer_types else None, help=f"Overwrite list of values for {k}, default={v}")
+            requested_type = type(v[0]) if infer_types and v[0] is not None else None
+            parser.add_argument(option, metavar=metavar, nargs="+", type=requested_type, help=f"Overwrite list of values for {k}, default={v}")
         else:
-            parser.add_argument(option, metavar=metavar, type=type(v) if infer_types else None, help=f"Overwrite value for {k}, content of configuration file: `{v}`")
+            requested_type = type(v) if infer_types and v is not None else None
+            parser.add_argument(option, metavar=metavar, type=requested_type, help=f"Overwrite value for {k}, content of configuration file: `{v}`")
 
     # parse arguments again
     args = parser.parse_args(command_line_options)
