@@ -65,6 +65,10 @@ def config_parser(
     command_line_options = command_line_options or sys.argv[1:]
     # check if the help on the default parser is requested
     requests_help = len(command_line_options) == 0 or len(command_line_options) == 1 and command_line_options[0] in ("-h", "--help")
+    if parser is not None and requests_help:
+        # ask for the help of the given parser
+        parser.parse_args(command_line_options)
+
     _config_parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter, add_help=requests_help and not default_config_files, usage='%(prog)s [arguments] [options]')
     _config_parser.add_argument("configuration_files", nargs="+", default=default_config_files, help="The configuration files to parse. From the second config onward, it can be key=value pairs to create sub-configurations")
 
