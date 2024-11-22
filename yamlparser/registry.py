@@ -1,5 +1,6 @@
 import os
 import pathlib
+import warnings
 
 _registry_file = pathlib.Path.home() / ".yamlparser.yaml"
 
@@ -34,7 +35,8 @@ def get_registered_variable(variable):
     if variable in os.environ:
         return os.environ[variable]
 
-    raise ValueError(f"The given variable {variable} was neither found in the registry file {_registry_file} nor has it been set as environment variable")
+    warnings.warn(f"The given variable {variable} was neither found in the registry file {_registry_file} nor has it been set as environment variable")
+    return variable
 
 
 def set_registered_variable(variable, value):

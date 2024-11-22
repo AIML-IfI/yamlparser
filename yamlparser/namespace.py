@@ -138,7 +138,7 @@ class NameSpace:
             if not isinstance(namespace[self._sub_config_key], str):
                 raise ValueError(f"The '{self._sub_config_key}' keyword requires a file name, but we got '{namespace[self._sub_config_key]}' instead")
             # load config file
-            sub_config = NameSpace(namespace[self._sub_config_key], self._modifiable, self._sub_config_key)
+            sub_config = NameSpace(namespace[self._sub_config_key], self._modifiable, self._sub_config_key, self._registry_key)
             keys = list(sub_config.keys())
             if name in keys:
                 # set this as the config

@@ -39,6 +39,7 @@ class TestRegistry(unittest.TestCase):
         )
 
         assert namespace.data == "test_variable"
+        assert namespace.name == "My Name"
 
 
     def test_environment_content(self):

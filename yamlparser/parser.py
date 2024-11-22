@@ -84,7 +84,7 @@ def config_parser(
         config_file_options.append(option)
     args = _config_parser.parse_args(config_file_options)
 
-    namespace = NameSpace(args.configuration_files[0], sub_config_key, registry_key)
+    namespace = NameSpace(args.configuration_files[0], True, sub_config_key, registry_key)
     for cfg in args.configuration_files[1:]:
         splits = cfg.split("=")
         if len(splits)>1:
@@ -200,14 +200,14 @@ def registry_parser(registry_file=None, verbose=True, command_line_options=None)
             raise ValueError("Both --key and --value need to be specified in order to add items to registry")
         set_registered_variable(args.key, args.value)
         if verbose:
-            print(f"Registered '{args.key}: {args.value} into registry")
+            print(f"Registered '{args.key}: {args.value}' into registry")
 
     if args.delete:
         if args.key is None:
             raise ValueError("The --key needs to be specified in order to delete items from registry")
         delete_registered_variable(args.key)
         if verbose:
-            print(f"Removed '{args.key} from registry")
+            print(f"Removed '{args.key}' from registry")
 
     if args.list:
         if verbose:

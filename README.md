@@ -330,3 +330,78 @@ We propose to provide default values for all options (which cannot be `None`) to
 Finally, by default, the `config_parser` function stores the generated `NameSpace` object internally, calls its `format_self` function and freezes it.
 This configuration can be obtained via the `yamlparser.get_config()` function from anywhere in your source code.
 Please note that the `config_parser` function should be called only once.
+
+
+### Registry
+
+In some cases, configuration files contain variables that should be defined globally.
+For example, data directories can be dependent on your system, and you do not want to repeat such variables across different configuration files.
+For this purpose, we implemented `registry` functionality, which can store such variables in a global configuration file, which is typically stored in your `$HOME` directory.
+For easy access, we provide a command line parser `registry_parser` that allows to modify the contents of these files.
+Similarly to the `config_parser`, you can make use of such parser in a simple script:
+
+    [content of registry.py]
+    import yamlparser
+    import pathlib
+    registry_file = pathlib.Path.home() / ".my_registry_file.yaml"
+    yamlparser.registry_parser(registry_file)
+
+Now, when calling this script on command line, you can add, list and remove entries from that file:
+
+    $ python registry.py --add --key HOMETOWN --value "Zurich"
+
+    Working on Registry File [...]/.my_registry_file.yaml
+    Registered 'MY_KEY: My Value' into registry
+
+    $ python registry.py --list
+
+    Registry content:
+    HOMETOWN: Zurich
+
+More importantly, you can use a special keyword in a configuration file to indicate that a variable should be taken from the registry.
+Similarly to the `yaml` keyword to load sub-configurations, you can specify the `registry` keyword to access the registry.
+Given the registry as provided above, you can write the following namespace:
+
+    import yamlparser
+    import pathlib
+    registry_file = pathlib.Path.home() / ".my_registry_file.yaml"
+    yamlparser.set_registry_file(registry_file)
+
+    namespace = yamlparser.NameSpace({
+        "name" : "Jon Doe",
+        "age"  : 42,
+        "home" : {
+            "registry": "HOMETOWN"
+        }
+    })
+
+    print(namespace.dump())
+
+which will result in:
+
+    age: 42
+    home: Zurich
+    name: Jon Doe
+
+The exact same functionality can be used to read a variable from the systems ENVIRONMENT variables:
+
+
+    import yamlparser
+    import os
+    os.environ["HOMECOUNTRY"] = "Switzerland"
+
+    namespace = yamlparser.NameSpace({
+        "name" : "Jon Doe",
+        "age"  : 42,
+        "country" : {
+            "registry": "HOMECOUNTRY"
+        }
+    })
+
+    print(namespace.dump())
+
+results in:
+
+    age: 42
+    country: Switzerland
+    name: Jon Doe
