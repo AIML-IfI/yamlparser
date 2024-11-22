@@ -3,6 +3,7 @@ import sys
 import warnings
 
 from .namespace import NameSpace
+from .registry import set_registry_file,get_registry_file,registry_content,set_registered_variable,delete_registered_variable
 
 global _config
 _config = None
@@ -16,7 +17,8 @@ def config_parser(
         command_line_options=None,
         store_config=True,
         auto_format=True,
-        sub_config_key="yaml"
+        sub_config_key="yaml",
+        registry_key="registry"
     ):
     """Creates or updates an `argparse.ArgumentParser` with the option to load configuration files (YAML).
     These files will be automatically parsed and each configuration will be added as a separate option to the command line.
@@ -57,6 +59,9 @@ def config_parser(
     sub_config_key: str
     When the configuration files contain this key, this is interpreted as an additional linked config file.
 
+    registry_key: str
+    When the configuration files contain this key, it is replaced with its value that is stored in the registry or provided in the environment
+
     Returns:
     namespace: NameSpace
     A namespace object containing all options taken from configuration file and command line.
@@ -79,7 +84,7 @@ def config_parser(
         config_file_options.append(option)
     args = _config_parser.parse_args(config_file_options)
 
-    namespace = NameSpace(args.configuration_files[0], sub_config_key)
+    namespace = NameSpace(args.configuration_files[0], sub_config_key, registry_key)
     for cfg in args.configuration_files[1:]:
         splits = cfg.split("=")
         if len(splits)>1:
@@ -152,3 +157,59 @@ def get_config():
     if _config is None:
         raise RuntimeError("Please call 'config_parser(..., store_config=True)' before trying to access the configuration")
     return _config
+
+
+def registry_parser(registry_file=None, verbose=True, command_line_options=None):
+    """Creates and executes a command line parser that can be used to edit the contents of the given registry file
+
+    The parser can add, remove and list contents of this file.
+
+    Arguments:
+
+    registry_file: str or None
+    If given, the provided registry file will be used. Otherwise, the default file `~/.yamlparser.yaml` will be modified
+
+    verbose: bool
+    If set (the default), log messages will be printed, showing what action is performed.
+
+    command_line_options: list or None
+    For debugging purposes, a list of command line options is accepted. This is mainly a debug and test feature.
+    If not present, `sys.argv[1:]` is selected, as usual.
+    """
+    if registry_file is not None:
+        set_registry_file(registry_file)
+    if verbose:
+        print(f"Working on Registry File {get_registry_file()}")
+
+    parser = argparse.ArgumentParser(
+        description=f"Modifies the content of registry file '{get_registry_file()}'",
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+        add_help=True,
+        usage='%(prog)s [arguments] [options]')
+    parser.add_argument("--add", "-a", action="store_true", help = "Added the given --key and --value pair to the registry")
+    parser.add_argument("--delete", "-d", action="store_true", help = "Deletes the given --key from to the registry")
+    parser.add_argument("--list", "-l", action="store_true", help = "Lists the elements of the registry (after modification if given)")
+
+    parser.add_argument("--key", "-k", help = "The key to read or write")
+    parser.add_argument("--value", "-v", help = "The value to read")
+
+    args = parser.parse_args(command_line_options)
+
+    if args.add:
+        if args.key is None or args.value is None:
+            raise ValueError("Both --key and --value need to be specified in order to add items to registry")
+        set_registered_variable(args.key, args.value)
+        if verbose:
+            print(f"Registered '{args.key}: {args.value} into registry")
+
+    if args.delete:
+        if args.key is None:
+            raise ValueError("The --key needs to be specified in order to delete items from registry")
+        delete_registered_variable(args.key)
+        if verbose:
+            print(f"Removed '{args.key} from registry")
+
+    if args.list:
+        if verbose:
+            print("Registry content:")
+        print(registry_content().dump())

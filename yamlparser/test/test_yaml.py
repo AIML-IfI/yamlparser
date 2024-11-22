@@ -106,13 +106,14 @@ class TestYaml(unittest.TestCase):
         namespace = yamlparser.NameSpace(dict(name="Name", nested=dict(email="name@host.domain")))
 
         try:
-            _,filename = tempfile.mkstemp(".yaml")
+            file_descriptor,filename = tempfile.mkstemp(".yaml")
             # save to file
             namespace.save(filename)
             # create new namespace from file
             namespace = yamlparser.NameSpace(filename)
 
         finally:
+            os.close(file_descriptor)
             os.remove(filename)
 
         # check that all elements are loaded back correctly

@@ -3,9 +3,12 @@ import os
 import pathlib
 import importlib.resources
 
+from .registry import get_registered_variable
+
 _modifiable = "_modifiable"
 _sub_config_key = "_sub_config_key"
-_ignore_keys = [_modifiable, _sub_config_key]
+_registry_key = "_registry_key"
+_ignore_keys = [_modifiable, _sub_config_key, _registry_key]
 
 def list_config_files(package, configuration_file_extensions=[".yaml", ".yml"]):
     """Lists all configuration files found in the given package that have the given filename extensions.
@@ -66,7 +69,7 @@ class NameSpace:
     Note that currently, dictionaries contained in lists are not supported (will not be transformed into sub-namespaces).
 
     """
-    def __init__(self, config, modifiable=True, sub_config_key="yaml"):
+    def __init__(self, config, modifiable=True, sub_config_key="yaml", registry_key="registry"):
         """Initializes this object with the given configuration, which can be a file name (for the yaml config file) or a dictionary
 
         Parameters
@@ -81,15 +84,19 @@ class NameSpace:
 
         sub_config_key: str
         When the configuration files contain this key, this is interpreted as an additional linked config file.
+
+        registry_key: str
+        When the configuration files contain this key, it is replaced with its value that is stored in the registry or provided in the environment
         """
         self._sub_config_key = sub_config_key
+        self._registry_key = registry_key
         self._modifiable = True
         self.update(config)
         self._modifiable = modifiable
 
     def clone(self):
         """Returns a copy of this namespace"""
-        return NameSpace(self.dict(), self._modifiable, self._sub_config_key)
+        return NameSpace(self.dict(), self._modifiable, self._sub_config_key, self._registry_key)
 
     def keys(self):
         """Returns the current list of keys in this namespace"""
@@ -100,7 +107,7 @@ class NameSpace:
         """Adds the given configuration as a sub-namespace.
         This is identical to `self.key = NameSpace(config)`"""
         # adds a different config file into a sub-namespace
-        self[key] = NameSpace(config, self._modifiable, self._sub_config_key)
+        self[key] = NameSpace(config, self._modifiable, self._sub_config_key, self._registry_key)
 
     def set(self, key, value):
         """Sets a value for a given key. This key can contain periods, which are parsed to index sub-namespaces"""
@@ -125,7 +132,7 @@ class NameSpace:
 
     def _load_subconfig(self, name, value):
         # create sub-config
-        namespace = NameSpace(value, self._modifiable, self._sub_config_key)
+        namespace = NameSpace(value, self._modifiable, self._sub_config_key, self._registry_key)
         # check if there is a sub-config file listed
         if self._sub_config_key in namespace.keys():
             if not isinstance(namespace[self._sub_config_key], str):
@@ -143,7 +150,13 @@ class NameSpace:
                 else:
                     raise ValueError(f"The sub configuration file {namespace[self._sub_config_key]} has several keys, but not including  '{name}'")
             # apply any overwrites from this config file
-            namespace.update({key:value for key,value in value.items() if key != self._sub_config_key})
+            namespace.update({k:v for k,v in value.items() if k != self._sub_config_key})
+
+        # check if there is a registered variable
+        if self._registry_key in namespace.keys():
+            if not isinstance(namespace[self._registry_key], str):
+                raise ValueError(f"The '{self._registry_key}' keyword requires a registry key, but we got '{namespace[self._registry_key]}' instead")
+            return get_registered_variable(namespace[self._registry_key])
         return namespace
 
 
@@ -161,7 +174,7 @@ class NameSpace:
                 first, rest = name.split(".", 1)
                 # create a new namespace if not existing
                 if first not in config.keys():
-                    config[first] = NameSpace({}, self._modifiable, self._sub_config_key)
+                    config[first] = NameSpace({}, self._modifiable, self._sub_config_key, self._registry_key)
                 # update the sub-namespace
                 config[first].update({rest:value})
             else:
@@ -300,7 +313,7 @@ class NameSpace:
         if not self._modifiable:
             raise AttributeError(f"You are trying to set key {key} in a frozen namespace")
         if isinstance(value, dict):
-            self.__dict__.update({key:NameSpace(value, self._modifiable, self._sub_config_key)})
+            self.__dict__.update({key:NameSpace(value, self._modifiable, self._sub_config_key, self._registry_key)})
         else:
             self.__dict__.update({key:value})
 
@@ -311,7 +324,7 @@ class NameSpace:
         if not self._modifiable:
             raise AttributeError(f"You are trying to add new key {key} to a frozen namespace")
         # create new empty namespace if not existing
-        namespace = NameSpace({}, self._modifiable, self._sub_config_key)
+        namespace = NameSpace({}, self._modifiable, self._sub_config_key, self._registry_key)
         self.update({key:namespace})
         return namespace
 
@@ -361,4 +374,5 @@ class NameSpace:
             raise IOError(f"Could not find config file {config}")
 
         with open(config, 'r') as f:
-            return yaml.safe_load(f)
+            # return the loaded yaml file, or an empty dictionary in case safe_load returns None
+            return yaml.safe_load(f) or {}
