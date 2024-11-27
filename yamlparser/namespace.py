@@ -2,6 +2,7 @@ import yaml
 import os
 import pathlib
 import importlib.resources
+import collections
 
 from .registry import get_registered_variable
 
@@ -34,6 +35,82 @@ def list_config_files(package, configuration_file_extensions=[".yaml", ".yml"]):
         for resource_file in resource_files
         if os.path.splitext(resource_file)[1] in configuration_file_extensions
     ]
+
+
+def get_required_registration(paths_to_collect, registry_key="registry", configuration_file_extensions=[".yaml", ".yml"], verbose=0):
+    """Goes through all configuration files that can be found in the given `paths_to_detect` and searches for entries that end with the given `registry_key`.
+
+    `paths_to_collect` to search for can be specified in various ways.
+
+    - It can be a list of file names, in which case registry keys for these file names are collected.
+    - It can be a directory, in which case all files in that directory that end with the `configuration_file_extensions` are collected through a `os.walk`.
+    - It can be a package, using the `@package` or `package@`  notation, in which case all config files within that package are collected via `list_config_files`.
+
+    For each file, this function iterates through all attributes that contain the given `registry_key`.
+    For each such entry, we will collect a list of configuration files and their respective attributes that contain this key.
+
+
+    Parameters:
+    paths_to_collect: [str]
+    A list of paths that should be collected, see above.
+
+    registry_key: str
+    The key to search for in the config files
+
+    configuration_file_extensions: [str]
+    A list of filename extensions of configuration files that should be found
+
+    verbose: int
+    Be more verbose in the process. 0 = no prints, 1 = main prints, 2 = detailed prints
+
+    Returns: dict
+    { REGISTRY_KEY: [(config_file,attribute)] }
+
+    """
+
+    paths = []
+    for path in paths_to_collect:
+        # check whether we have an @ inside the filename
+        if "@" in path:
+            splits = path.strip().split("@")
+            # remove trailing and empty parts
+            splits = [s.strip() for s in splits if s.strip()]
+
+            if len(splits) != 1:
+                raise ValueError("An @ was found in the path, indicating a package, but the syntax is wrong")
+                # load config file directly
+            if verbose:
+                print(f"Running through config files registered in package '{splits[0]}'")
+            paths.extend(list_config_files(splits[0], configuration_file_extensions))
+        else:
+            # get list of element inside the given path (might be a file or a directory)
+            path = pathlib.Path(path)
+            if path.is_dir():
+                if verbose:
+                    print(f"Scanning directory '{path}'")
+                for dirpath, dirnames, filenames in os.walk(path):
+                    for filename in filenames:
+                        config = pathlib.Path(dirpath)/filename
+                        if config.suffix in configuration_file_extensions:
+                            paths.append(config)
+
+            elif path.is_file():
+                paths.append(path)
+            else:
+                ValueError(f"The given path {path} is not a file or directory, and not a package")
+
+    # now, go through all files and collect registry keys
+    required_keys = collections.defaultdict(list)
+    for config in paths:
+        if verbose>1:
+            print(f"scanning config file {config}")
+        namespace = NameSpace(str(config), modifiable=False, registry_key=None)
+        for attribute, value in namespace.attributes().items():
+#            if registry_key in attribute: breakpoint()
+            if attribute.split(".")[-1] == registry_key:
+                required_keys[value].append((config, attribute))
+
+    return required_keys
 
 class NameSpace:
     """This is the main class representing our configuration.
