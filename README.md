@@ -385,7 +385,6 @@ which will result in:
 
 The exact same functionality can be used to read a variable from the systems ENVIRONMENT variables:
 
-
     import yamlparser
     import os
     os.environ["HOMECOUNTRY"] = "Switzerland"
@@ -405,3 +404,20 @@ results in:
     age: 42
     country: Switzerland
     name: Jon Doe
+
+
+Given that you have a list of configuration files, and you want to know which variables are contained in any of these files, you can use the same script as above, which provides a `--collect` option.
+This collect option can be used in various ways.
+You can pass in a list of configuration files that you want to parse, a directory including configuration files, or an installed package (via "@package" notation).
+Particularly, you can use:
+
+    $ python registry.py --verbose --collect @yamlparser
+
+to iterate though all configuration files contained in the `yamlparser` package, which for now contains one such config file in the `test` folder.
+Hence, the above command results in
+
+    Working on Registry File [..]/.my_registry_file.yaml
+    Searching for configuration files containing registry key 'registry'
+    Running through config files registered in package 'yamlparser'
+    Found required key 'TEST_KEY'
+    - 'data.registry' from config file [..]/test/registry_config.yaml
