@@ -348,12 +348,12 @@ Similarly to the `config_parser`, you can make use of such parser in a simple sc
 
 Now, when calling this script on command line, you can add, list and remove entries from that file:
 
-    $ python registry.py --add --key HOMETOWN --value "Zurich"
+    $ python registry.py --verbose --add --key HOMETOWN --entry "Zurich"
 
     Working on Registry File [...]/.my_registry_file.yaml
-    Registered 'MY_KEY: My Value' into registry
+    Registered 'HOMETOWN: Zurich' into registry
 
-    $ python registry.py --list
+    $ python registry.py --verbose --list
 
     Registry content:
     HOMETOWN: Zurich
